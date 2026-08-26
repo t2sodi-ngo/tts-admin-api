@@ -1,7 +1,11 @@
 <?php
 // api/admin/auth.php — Mobile Login Step 1 & Step 2 Dual 2FA REST API
 require_once __DIR__ . '/middleware.php';
-require_once __DIR__ . '/../../includes/totp.php';
+if (file_exists(__DIR__ . '/../includes/totp.php')) {
+    require_once __DIR__ . '/../includes/totp.php';
+} elseif (file_exists(__DIR__ . '/../../includes/totp.php')) {
+    require_once __DIR__ . '/../../includes/totp.php';
+}
 
 $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 $action = sanitize($input['action'] ?? $_GET['action'] ?? '');
