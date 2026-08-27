@@ -5,10 +5,15 @@ require_once __DIR__ . '/middleware.php';
 $user = verify_mobile_token($pdo);
 $method = $_SERVER['REQUEST_METHOD'];
 
-// ── GET: Fetch Donations List ────────────────────────────────────────────────
+// ── GET: Fetch Donations List & Summary Metrics ────────────────────────────────
 if ($method === 'GET') {
-    $status = sanitize($_GET['status'] ?? 'pending');
+    $status = sanitize($_GET['status'] ?? 'all');
     $search = sanitize($_GET['search'] ?? '');
+
+    // Calculate Summary Metrics across database
+    $total_collected = (float)$pdo->query("SELECT COALESCE(SUM(amount), 0) FROM donations WHERE status = 'captured'")->fetchColumn();
+    $verified_count = (int)$pdo->query("SELECT COUNT(*) FROM donations WHERE status = 'captured'")->fetchColumn();
+    $pending_count = (int)$pdo->query("SELECT COUNT(*) FROM donations WHERE status = 'pending'")->fetchColumn();
 
     $sql = "SELECT * FROM donations WHERE 1=1";
     $params = [];
@@ -19,9 +24,9 @@ if ($method === 'GET') {
     }
 
     if (!empty($search)) {
-        $sql .= " AND (donor_name LIKE ? OR receipt_no LIKE ? OR transaction_id LIKE ? OR donor_email LIKE ?)";
+        $sql .= " AND (donor_name LIKE ? OR receipt_no LIKE ? OR transaction_id LIKE ? OR donor_email LIKE ? OR donor_pan LIKE ?)";
         $term = "%{$search}%";
-        $params[] = $term; $params[] = $term; $params[] = $term; $params[] = $term;
+        $params[] = $term; $params[] = $term; $params[] = $term; $params[] = $term; $params[] = $term;
     }
 
     $sql .= " ORDER BY created_at DESC LIMIT 100";
@@ -29,7 +34,14 @@ if ($method === 'GET') {
     $stmt->execute($params);
     $donations = $stmt->fetchAll();
 
-    json_response(['status' => 'success', 'count' => count($donations), 'donations' => $donations]);
+    json_response([
+        'status'          => 'success',
+        'total_collected' => $total_collected,
+        'verified_count'  => $verified_count,
+        'pending_count'   => $pending_count,
+        'count'           => count($donations),
+        'donations'       => $donations
+    ]);
 }
 
 // ── POST: Approve or Reject Donation ─────────────────────────────────────────
