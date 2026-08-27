@@ -11,12 +11,21 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS
     exit();
 }
 
-if (file_exists(__DIR__ . '/../includes/db.php')) {
+if (file_exists(__DIR__ . '/../db.php')) {
+    require_once __DIR__ . '/../db.php';
+    if (file_exists(__DIR__ . '/../functions.php')) {
+        require_once __DIR__ . '/../functions.php';
+    }
+} elseif (file_exists(__DIR__ . '/../includes/db.php')) {
     require_once __DIR__ . '/../includes/db.php';
-    require_once __DIR__ . '/../includes/functions.php';
+    if (file_exists(__DIR__ . '/../includes/functions.php')) {
+        require_once __DIR__ . '/../includes/functions.php';
+    }
 } elseif (file_exists(__DIR__ . '/../../includes/db.php')) {
     require_once __DIR__ . '/../../includes/db.php';
-    require_once __DIR__ . '/../../includes/functions.php';
+    if (file_exists(__DIR__ . '/../../includes/functions.php')) {
+        require_once __DIR__ . '/../../includes/functions.php';
+    }
 }
 
 /**
