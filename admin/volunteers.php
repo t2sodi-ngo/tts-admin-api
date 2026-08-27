@@ -72,9 +72,31 @@ if ($method === 'GET') {
     }
 
     if ($action === 'delete') {
+        if ($vol_id <= 0) {
+            json_response(['status' => 'error', 'message' => 'Invalid volunteer ID.'], 400);
+        }
         $pdo->prepare("DELETE FROM volunteers WHERE id = ?")->execute([$vol_id]);
         json_response(['status' => 'success', 'message' => 'Volunteer record deleted successfully.']);
+    } elseif ($action === 'add' || $action === 'add_volunteer') {
+        $name     = sanitize($_POST['name'] ?? $input['name'] ?? '');
+        $email    = sanitize($_POST['email'] ?? $input['email'] ?? '');
+        $phone    = sanitize($_POST['phone'] ?? $input['phone'] ?? '');
+        $city     = sanitize($_POST['city'] ?? $input['city'] ?? 'Bhubaneswar');
+        $interest = sanitize($_POST['area_of_interest'] ?? $input['area_of_interest'] ?? 'General Seva');
+        $status   = sanitize($_POST['status'] ?? $input['status'] ?? 'active');
+
+        if (empty($name) || empty($email)) {
+            json_response(['status' => 'error', 'message' => 'Volunteer name and email are required.'], 400);
+        }
+
+        $pdo->prepare("INSERT INTO volunteers (name, email, phone, city, area_of_interest, status) VALUES (?, ?, ?, ?, ?, ?)")
+            ->execute([$name, $email, $phone, $city, $interest, $status]);
+
+        json_response(['status' => 'success', 'message' => "Volunteer {$name} registered successfully."]);
     } else {
+        if ($vol_id <= 0) {
+            json_response(['status' => 'error', 'message' => 'Invalid volunteer ID.'], 400);
+        }
         $new_status = sanitize($input['status'] ?? 'active');
         $pdo->prepare("UPDATE volunteers SET status = ? WHERE id = ?")->execute([$new_status, $vol_id]);
         json_response(['status' => 'success', 'message' => "Volunteer status updated to {$new_status}."]);
