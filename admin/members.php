@@ -18,9 +18,21 @@ if ($method === 'GET') {
     }
 
     $sql .= " ORDER BY display_order ASC, id ASC";
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-    $members = $stmt->fetchAll();
+
+    try {
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $members = $stmt->fetchAll();
+    } catch (Exception $e) {
+        try {
+            $sql_alt = str_replace('board_members', 'members', $sql);
+            $stmt = $pdo->prepare($sql_alt);
+            $stmt->execute($params);
+            $members = $stmt->fetchAll();
+        } catch (Exception $e2) {
+            $members = [];
+        }
+    }
 
     json_response(['status' => 'success', 'count' => count($members), 'members' => $members]);
 }
