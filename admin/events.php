@@ -14,14 +14,25 @@ if ($method === 'GET') {
     $total_events = (int)$pdo->query("SELECT COUNT(*) FROM events")->fetchColumn();
     $upcoming_count = (int)$pdo->query("SELECT COUNT(*) FROM events WHERE LOWER(status) = 'upcoming'")->fetchColumn();
 
-    // Check if event_signups table exists, otherwise count
-    $total_registrations = 94;
+    // Fetch Event Attendees / Registrations
+    $registrations = [];
     try {
-        $reg_stmt = $pdo->query("SELECT COUNT(*) FROM event_signups");
+        $reg_stmt = $pdo->query("SELECT s.id, s.event_id, e.title as event_title, s.name, s.email, COALESCE(s.role, 'ATTENDEE') as role, s.created_at FROM event_signups s LEFT JOIN events e ON e.id = s.event_id ORDER BY s.id DESC LIMIT 50");
         if ($reg_stmt) {
-            $total_registrations = (int)$reg_stmt->fetchColumn();
+            $registrations = $reg_stmt->fetchAll();
+            $total_registrations = count($registrations);
         }
-    } catch (Exception $e) {}
+    } catch (Exception $e) {
+        try {
+            $reg_stmt = $pdo->query("SELECT s.id, s.event_id, e.title as event_title, s.name, s.email, COALESCE(s.role, 'ATTENDEE') as role, s.created_at FROM event_registrations s LEFT JOIN events e ON e.id = s.event_id ORDER BY s.id DESC LIMIT 50");
+            if ($reg_stmt) {
+                $registrations = $reg_stmt->fetchAll();
+                $total_registrations = count($registrations);
+            }
+        } catch (Exception $e2) {
+            $registrations = [];
+        }
+    }
 
     $sql = "SELECT * FROM events WHERE 1=1";
     $params = [];
@@ -49,7 +60,8 @@ if ($method === 'GET') {
         'upcoming_count'      => $upcoming_count,
         'total_registrations' => $total_registrations,
         'count'               => count($events),
-        'events'              => $events
+        'events'              => $events,
+        'registrations'       => $registrations
     ]);
 }
 
